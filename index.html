@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szyfrator Przeciwzłamaniowy (Paper-Safe)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        cyber: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #030712;
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(34, 197, 94, 0.08) 0px, transparent 40%),
+                radial-gradient(at 90% 90%, rgba(99, 102, 241, 0.08) 0px, transparent 40%);
+        }
+        .glass-card {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex items-center justify-center p-4 sm:p-6 font-sans">
+
+    <div class="w-full max-w-2xl glass-card rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+        
+        <!-- Header -->
+        <header class="text-center space-y-2">
+            <div class="inline-flex items-center justify-center p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl mb-1">
+                <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-400">
+                Pancerne Szyfrowanie (Kartkowe)
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+                Nawet 5 liter zamieni w długi kod z pytajnikami, cyframi i literami. Odszyfrowanie jest możliwe <b>tylko w tej aplikacji</b>.
+            </p>
+        </header>
+
+        <!-- Controls: Key & Slider -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Slider (Poziom 1-100) -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-2">
+                <div class="flex justify-between items-center">
+                    <label for="levelRange" class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        </svg>
+                        Poziom szyfru:
+                    </label>
+                    <span id="levelDisplay" class="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/20">
+                        Poziom 42
+                    </span>
+                </div>
+                <input type="range" id="levelRange" min="1" max="100" value="42" oninput="updateLevelDisplay()"
+                       class="w-full accent-emerald-500 h-2 bg-slate-950 rounded-lg cursor-pointer">
+            </div>
+
+            <!-- Tajne Słowo Klucz -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-2">
+                <label for="secretKey" class="text-xs font-bold uppercase tracking-wider text-slate-400 block flex items-center gap-1">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z"></path>
+                    </svg>
+                    Hasło Słowne:
+                </label>
+                <input type="text" id="secretKey" value="TAJNE10" placeholder="Wpisz słowo-klucz..."
+                       class="w-full bg-slate-950/80 border border-slate-700 focus:border-emerald-500 text-white rounded-xl px-3 py-1.5 font-mono text-sm uppercase outline-none transition-all">
+            </div>
+        </div>
+
+        <!-- Input Text -->
+        <div class="space-y-2">
+            <div class="flex justify-between items-center">
+                <label for="inputText" class="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                    Tekst do zaszyfrowania lub odszyfrowania:
+                </label>
+                <span id="charCounter" class="text-xs text-slate-500 font-mono">
+                    Znaki: 0
+                </span>
+            </div>
+            <textarea id="inputText" rows="3" oninput="updateCharCount()" placeholder="Napisz np. 'KOT' lub 'CZEŚĆ'..."
+                      class="custom-scrollbar w-full bg-slate-950/90 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl p-3.5 text-base font-sans outline-none transition-all resize-none placeholder:text-slate-600"></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="encryptText()" 
+                    class="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-950/40 active:scale-[0.98] transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                🔒 Zaszyfruj
+            </button>
+            <button onclick="decryptText()" 
+                    class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-3.5 px-4 rounded-xl border border-slate-700/80 active:scale-[0.98] transition-all">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+                </svg>
+                🔓 Odszyfruj
+            </button>
+        </div>
+
+        <!-- Swap Button -->
+        <div class="flex justify-center -my-2">
+            <button onclick="swapTexts()" title="Zamień tekst wyniku z polem wejściowym"
+                    class="bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700/60 rounded-full px-3 py-1 text-xs flex items-center gap-1 transition-all">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                </svg>
+                Zamień pola miejscami
+            </button>
+        </div>
+
+        <!-- Output Text -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between">
+                <label for="outputText" class="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                    Wynik do przepisania na kartkę:
+                </label>
+                <button onclick="copyToClipboard()" 
+                        class="text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 font-medium px-3 py-1 rounded-lg border border-emerald-500/30 flex items-center gap-1.5 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 001 2h2a2 2 0 001-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                    </svg>
+                    Skopiuj wynik
+                </button>
+            </div>
+            <textarea id="outputText" readonly rows="3" placeholder="Tutaj pojawi się gotowa zaszyfrowana wiadomość..."
+                      class="custom-scrollbar w-full bg-slate-950/90 border border-slate-800 text-emerald-300 font-mono tracking-wider rounded-xl p-3.5 text-base outline-none resize-none break-all"></textarea>
+        </div>
+
+        <!-- Security Status Bar -->
+        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-400 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="infoStatus" class="font-medium text-slate-300">Aplikacja gotowa. Dopełnianie krótkiego tekstu aktywne.</span>
+            </div>
+            <span id="expansionBadge" class="hidden font-mono bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30 text-[10px]">
+                Wydłużono o +0 znaków
+            </span>
+        </div>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-full shadow-lg opacity-0 pointer-events-none transition-all duration-300 transform translate-y-4 text-xs sm:text-sm flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span id="toastMessage">Skopiowano!</span>
+    </div>
+
+    <script>
+        // Full Polish Alphabet for substitution + Noise characters (letters, numbers, ?, !)
+        const ALPHABET = "AĄBCĆDEĘFGHIJKLŁMNŃOÓPRSŚTUWYZŹŻaąbcćdeęfghijklłmnńoóprsśtuwyzźż0123456789";
+        const NOISE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789?!";
+
+        function updateLevelDisplay() {
+            const val = document.getElementById('levelRange').value;
+            document.getElementById('levelDisplay').innerText = `Poziom ${val}`;
+        }
+
+        function updateCharCount() {
+            const text = document.getElementById('inputText').value;
+            document.getElementById('charCounter').innerText = `Znaki: ${text.length}`;
+        }
+
+        // Pseudo-random generator seeded by level + secret key string
+        function createPRNG(seedString) {
+            let hash = 0;
+            for (let i = 0; i < seedString.length; i++) {
+                hash = (hash << 5) - hash + seedString.charCodeAt(i);
+                hash |= 0;
+            }
+            return function() {
+                hash = (hash * 9301 + 49297) % 233280;
+                return hash / 233280;
+            };
+        }
+
+        // Encryption Algorithm with Expansion / Obfuscation
+        function encryptText() {
+            const input = document.getElementById('inputText').value;
+            const level = document.getElementById('levelRange').value;
+            const key = document.getElementById('secretKey').value.trim() || "KLUCZ";
+
+            if (!input) {
+                showToast("Wpisz tekst do zaszyfrowania!");
+                return;
+            }
+
+            const rng = createPRNG(`${level}_${key}`);
+
+            // Ensure short text gets expanded to at least 15-20 characters
+            let targetLength = Math.max(input.length * 2, 18);
+            
+            let resultChars = new Array(targetLength);
+            let usedPositions = new Set();
+
+            // Determine secret deterministic indices for real message letters
+            let realPositions = [];
+            while (realPositions.length < input.length) {
+                let pos = Math.floor(rng() * targetLength);
+                if (!usedPositions.has(pos)) {
+                    usedPositions.add(pos);
+                    realPositions.push(pos);
+                }
+            }
+
+            // Sort positions chronologically to preserve letter order
+            realPositions.sort((a, b) => a - b);
+
+            // Shift and put real letters into chosen secret positions
+            for (let i = 0; i < input.length; i++) {
+                let char = input[i];
+                let pos = realPositions[i];
+                
+                let charIdx = ALPHABET.indexOf(char);
+                if (charIdx !== -1) {
+                    let shift = Math.floor(rng() * 50) + parseInt(level);
+                    let newChar = ALPHABET[(charIdx + shift) % ALPHABET.length];
+                    resultChars[pos] = newChar;
+                } else {
+                    resultChars[pos] = char; // spaces, punctuation stay as is
+                }
+            }
+
+            // Fill remaining empty slots with noise characters (letters, digits, ?, !)
+            for (let i = 0; i < targetLength; i++) {
+                if (resultChars[i] === undefined) {
+                    let noiseIdx = Math.floor(rng() * NOISE_CHARS.length);
+                    resultChars[i] = NOISE_CHARS[noiseIdx];
+                }
+            }
+
+            const finalCipher = resultChars.join("");
+            document.getElementById('outputText').value = finalCipher;
+
+            // UI Info
+            document.getElementById('infoStatus').innerText = "Wiadomość zaszyfrowana i dopełniona szumem.";
+            const badge = document.getElementById('expansionBadge');
+            badge.innerText = `Krótki tekst (${input.length}) ➔ Rozszerzono do ${targetLength} znaków`;
+            badge.classList.remove('hidden');
+        }
+
+        // Decryption Algorithm
+        function decryptText() {
+            const cipher = document.getElementById('inputText').value.trim();
+            const level = document.getElementById('levelRange').value;
+            const key = document.getElementById('secretKey').value.trim() || "KLUCZ";
+
+            if (!cipher) {
+                showToast("Wpisz zaszyfrowany tekst!");
+                return;
+            }
+
+            const rng = createPRNG(`${level}_${key}`);
+            let targetLength = cipher.length;
+
+            // Reconstruct positions of real letters
+            let usedPositions = new Set();
+            let realPositions = [];
+
+            // Compute positions iteratively to match exact length
+            // Guess length bounds or estimate original length using seed
+            let estimatedOriginalLength = Math.min(cipher.length, Math.max(Math.floor(cipher.length / 2), 1));
+            
+            // Re-run position selection
+            let tempRng = createPRNG(`${level}_${key}`);
+            for (let l = 1; l <= cipher.length; l++) {
+                let testRng = createPRNG(`${level}_${key}`);
+                let testTargetLength = Math.max(l * 2, 18);
+                if (testTargetLength === cipher.length) {
+                    estimatedOriginalLength = l;
+                    break;
+                }
+            }
+
+            let realTargetLength = Math.max(estimatedOriginalLength * 2, 18);
+            if (realTargetLength !== cipher.length) {
+                // If user changed custom string length manually on paper
+                realTargetLength = cipher.length;
+            }
+
+            while (realPositions.length < estimatedOriginalLength && realPositions.length < cipher.length) {
+                let pos = Math.floor(tempRng() * cipher.length);
+                if (!usedPositions.has(pos)) {
+                    usedPositions.add(pos);
+                    realPositions.push(pos);
+                }
+            }
+            realPositions.sort((a, b) => a - b);
+
+            // Re-generate shift values
+            let shifts = [];
+            for (let i = 0; i < realPositions.length; i++) {
+                shifts.push(Math.floor(tempRng() * 50) + parseInt(level));
+            }
+
+            // Extract real characters
+            let decrypted = "";
+            for (let i = 0; i < realPositions.length; i++) {
+                let pos = realPositions[i];
+                let char = cipher[pos];
+
+                if (!char) continue;
+
+                let charIdx = ALPHABET.indexOf(char);
+                if (charIdx !== -1) {
+                    let shift = shifts[i];
+                    let originalIdx = (charIdx - shift) % ALPHABET.length;
+                    if (originalIdx < 0) originalIdx += ALPHABET.length;
+                    decrypted += ALPHABET[originalIdx];
+                } else {
+                    decrypted += char;
+                }
+            }
+
+            document.getElementById('outputText').value = decrypted;
+            document.getElementById('infoStatus').innerText = "Wiadomość odkodowana pomyślnie!";
+            document.getElementById('expansionBadge').classList.add('hidden');
+        }
+
+        // Helper UI Actions
+        function swapTexts() {
+            const input = document.getElementById('inputText');
+            const output = document.getElementById('outputText');
+            if (output.value) {
+                input.value = output.value;
+                output.value = "";
+                updateCharCount();
+                showToast("Zamieniono tekst!");
+            }
+        }
+
+        function copyToClipboard() {
+            const outputText = document.getElementById('outputText');
+            if (!outputText.value) return;
+
+            outputText.select();
+            document.execCommand('copy');
+            showToast("Skopiowano do schowka!");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
