@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szyfrator & Odszyfrator Wiadomości</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success-color: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        .container {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 650px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .key-section {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .key-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .key-header label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .key-input-num {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--accent-color);
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 4px 8px;
+            border-radius: 8px;
+            width: 80px;
+            text-align: center;
+            outline: none;
+        }
+
+        .key-input-num:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+            height: 6px;
+        }
+
+        .btn-small {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-small:hover {
+            background: #475569;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        textarea {
+            width: 100%;
+            height: 110px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--text-color);
+            font-size: 1rem;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--accent-color);
+        }
+
+        .textarea-anim {
+            border-color: var(--accent-color) !important;
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-encrypt {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-encrypt:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        .btn-decrypt {
+            background: #334155;
+            color: white;
+        }
+
+        .btn-decrypt:hover {
+            background: #475569;
+            transform: translateY(-1px);
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .output-box {
+            position: relative;
+        }
+
+        .btn-copy {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent-color);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-copy:hover {
+            background: rgba(99, 102, 241, 0.3);
+        }
+
+        .swap-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: block;
+            margin: -10px auto 10px auto;
+            font-size: 1.2rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .swap-btn:hover {
+            color: var(--text-color);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .swap-rotate {
+            transform: rotate(180deg);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--success-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>🔐 Tajny Szyfrator</h1>
+            <p>Zaszyfruj wiadomość, aby nikt jej nie odczytał bez znajomości klucza.</p>
+        </header>
+
+        <!-- Wybór poziomu / klucza kodowania -->
+        <div class="key-section">
+            <div class="key-header">
+                <label for="keyRange">Poziom Kodowania (1–1000)</label>
+                <input type="number" id="keyNumber" class="key-input-num" min="1" max="1000" value="15" oninput="updateKeyFromInput()">
+            </div>
+            <div class="slider-container">
+                <input type="range" id="keyRange" min="1" max="1000" value="15" oninput="updateKeyFromSlider()">
+                <button class="btn-small" onclick="generateRandomKey()">Losuj</button>
+            </div>
+        </div>
+
+        <!-- Pole tekstowe do wpisania -->
+        <div class="input-group">
+            <label for="inputText">Wpisz tekst do zaszyfrowania lub odszyfrowania:</label>
+            <textarea id="inputText" placeholder="Wpisz tutaj swoją wiadomość..."></textarea>
+        </div>
+
+        <!-- Przyciski akcji -->
+        <div class="actions">
+            <button class="btn btn-encrypt" id="btnEncrypt" onclick="processText('encrypt')">🔒 Zaszyfruj</button>
+            <button class="btn btn-decrypt" id="btnDecrypt" onclick="processText('decrypt')">🔓 Odszyfruj</button>
+        </div>
+
+        <button class="swap-btn" id="swapBtn" onclick="swapText()" title="Zamień wynik z wejściem">⬇️⬆️</button>
+
+        <!-- Pole z wynikiem -->
+        <div class="input-group">
+            <div class="output-header">
+                <label for="outputText">Wynik:</label>
+                <button class="btn-small btn-copy" id="btnCopy" onclick="copyResult()">📋 Skopiuj wynik</button>
+            </div>
+            <div class="output-box">
+                <textarea id="outputText" readonly placeholder="TUTAJ pojawi się zaszyfrowana lub odszyfrowana wiadomość..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">✓ Skopiowano do schowka!</div>
+
+    <script>
+        let currentAnimationTimer = null;
+
+        // Synchronizacja suwaka i pola wpisywania
+        function updateKeyFromSlider() {
+            const val = document.getElementById('keyRange').value;
+            document.getElementById('keyNumber').value = val;
+        }
+
+        function updateKeyFromInput() {
+            let input = document.getElementById('keyNumber');
+            let val = parseInt(input.value);
+            if (isNaN(val)) val = 1;
+            if (val > 1000) val = 1000;
+            if (val < 1) val = 1;
+            document.getElementById('keyRange').value = val;
+        }
+
+        // Losowanie klucza od 1 do 1000
+        function generateRandomKey() {
+            const randomVal = Math.floor(Math.random() * 1000) + 1;
+            document.getElementById('keyRange').value = randomVal;
+            document.getElementById('keyNumber').value = randomVal;
+        }
+
+        // Kompaktowy zestaw znaków do skracania kodu (URL-safe Base64)
+        const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+        // Szyfrowanie ze zwięzłym zapisem
+        function compactEncrypt(str, shift) {
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(str);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+                let shiftedByte = (bytes[i] + shift + (i * 7)) % 256;
+                binary += String.fromCharCode(shiftedByte);
+            }
+            return btoa(binary)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
+        }
+
+        // Odszyfrowanie z przywróceniem bajtów
+        function compactDecrypt(str, shift) {
+            let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4) {
+                base64 += '=';
+            }
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                let code = binary.charCodeAt(i);
+                let originalByte = (code - shift - (i * 7)) % 256;
+                if (originalByte < 0) originalByte += 256;
+                bytes[i] = originalByte;
+            }
+            const decoder = new TextDecoder();
+            return decoder.decode(bytes);
+        }
+
+        // Główna funkcja szyfrująca i odszyfrowująca z animacją i "tik"
+        function processText(mode) {
+            const input = document.getElementById('inputText').value;
+            const shift = parseInt(document.getElementById('keyNumber').value) || 1;
+            const outputElement = document.getElementById('outputText');
+            const btn = mode === 'encrypt' ? document.getElementById('btnEncrypt') : document.getElementById('btnDecrypt');
+            const originalText = mode === 'encrypt' ? '🔒 Zaszyfruj' : '🔓 Odszyfruj';
+
+            if (!input.trim()) {
+                outputElement.value = '';
+                return;
+            }
+
+            try {
+                let finalResult = '';
+                if (mode === 'encrypt') {
+                    finalResult = compactEncrypt(input, shift);
+                } else if (mode === 'decrypt') {
+                    finalResult = compactDecrypt(input, shift);
+                }
+
+                // Efekt wizualny z "tikem" na przycisku
+                btn.innerHTML = (mode === 'encrypt' ? '🔒' : '🔓') + ' Gotowe ✓';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                }, 1500);
+
+                // Animacja przeskakiwania znaków
+                animateOutputText(outputElement, finalResult);
+
+            } catch (e) {
+                if (mode === 'decrypt') {
+                    animateOutputText(outputElement, "⚠️ Błąd: Nieprawidłowy kod lub zły poziom kodowania!");
+                } else {
+                    animateOutputText(outputElement, "⚠️ Wystąpił błąd podczas szyfrowania.");
+                }
+            }
+        }
+
+        // Animacja wpisywania/efektu hakerskiego
+        function animateOutputText(element, finalText) {
+            if (currentAnimationTimer) clearInterval(currentAnimationTimer);
+            
+            element.classList.add('textarea-anim');
+            let length = finalText.length;
+            let currentStep = 0;
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+
+            if (length > 150) {
+                // Szybkie pisanie dla bardzo długiego tekstu
+                element.value = '';
+                let index = 0;
+                currentAnimationTimer = setInterval(() => {
+                    index += Math.ceil(length / 20);
+                    if (index >= length) {
+                        element.value = finalText;
+                        clearInterval(currentAnimationTimer);
+                        element.classList.remove('textarea-anim');
+                    } else {
+                        element.value = finalText.substring(0, index);
+                    }
+                }, 20);
+            } else {
+                // Efekt losowych znaków (Cipher animation)
+                currentAnimationTimer = setInterval(() => {
+                    let progressText = finalText.substring(0, currentStep);
+                    for (let i = currentStep; i < length; i++) {
+                        progressText += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    element.value = progressText;
+
+                    currentStep++;
+                    if (currentStep > length) {
+                        element.value = finalText;
+                        clearInterval(currentAnimationTimer);
+                        element.classList.remove('textarea-anim');
+                    }
+                }, 25);
+            }
+        }
+
+        // Kopiowanie wyniku do schowka + tik
+        function copyResult() {
+            const outputText = document.getElementById('outputText');
+            const btnCopy = document.getElementById('btnCopy');
+            if (!outputText.value) return;
+
+            outputText.select();
+            document.execCommand('copy');
+            
+            showToast("✓ Skopiowano do schowka!");
+            
+            // Dodaj tik na przycisku kopiowania
+            const originalText = btnCopy.innerHTML;
+            btnCopy.innerHTML = "✓ Skopiowano!";
+            setTimeout(() => {
+                btnCopy.innerHTML = originalText;
+            }, 1500);
+        }
+
+        // Zamiana tekstu z animacją i obrotem
+        function swapText() {
+            const input = document.getElementById('inputText');
+            const output = document.getElementById('outputText');
+            const swapBtn = document.getElementById('swapBtn');
+            
+            if (output.value && !output.value.startsWith("⚠️")) {
+                swapBtn.classList.toggle('swap-rotate');
+                input.value = output.value;
+                output.value = "";
+                
+                input.classList.add('textarea-anim');
+                setTimeout(() => {
+                    input.classList.remove('textarea-anim');
+                }, 500);
+            }
+        }
+
+        // Pokazywanie powiadomienia "Toast"
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
